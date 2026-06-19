@@ -1,0 +1,13 @@
+# 编辑器/系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code session 上下文
+.claude/LAST_HANDOFF.md
+
+# 临时文件
+*.tmp
+*.bak
+*.log
