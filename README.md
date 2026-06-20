@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="./banner.png" alt="Farm Manager Design Spec" width="100%">
+</p>
+
+<p align="center">
+  简体中文 | <a href="./README_en.md">English</a>
+</p>
+
 # Farm Manager 设计规范（Design Spec）
 
 > 版本：v0.9（草稿，全部 33 篇骨架已成 + Context/Memory 压缩机制修订 + Discovery Layer 设计补充 + 知识与记忆架构梳理 + 完整脱敏 + 作物地域化 delta 提案同步 + 数据库结构设计补全）  
@@ -146,3 +154,7 @@
 | v0.7 | 2026-06-19 | 深度脱敏补漏：[07_可观测与运维] § 5 删除"对齐智能家居 LOGBUS 风格"，§ 11 部署路径 / 服务名 / 运维脚本全部改为占位（`<repo_dir>` / `<service_name>`）；[03_技术选型与依赖] § 5 同步；[03_接口协议/03_外部服务接口] § 5/§ 6 日志路径 + systemd unit 中所有 `/root/workspace/...` 改占位、User 字段改 `<deploy_user>` | BlockShip |
 | v0.8 | 2026-06-19 | 作物地域化同步：新建 [openspec/changes/extend-crop-template-with-region-tag](../openspec/changes/extend-crop-template-with-region-tag/proposal.md) delta 提案（proposal/design/specs/tasks 完整）；同步 [04_相关规范/03_数据库与迁移规范] 表清单 `crops → crop_templates` + region_tag 说明；[01_正式设计/08_业务模块化] CropPort 签名加 region + 新增 list_system_templates / import_system_template；[02_产品需求/01_核心能力清单] 作物管理补地域化变体；[03_接口协议/01_HTTP_API协议] 补 `GET /crops/templates/system?region=` 与 `POST /import` 端点 | BlockShip |
 | v0.9 | 2026-06-20 | 新增 [01_正式设计/10_数据库结构设计]：以 `backend/sql/farm_manager.sql` 生产 dump 为基准，反推 33 张表（含 `alembic_version`）的字段、约束、索引、外键；附接口→表映射矩阵、生产 vs 代码层差异对账、预留待建表（`memory_records`/`audit_logs`/`evaluation_reports` 等） | BlockShip |
+
+## 协议
+
+[CC BY-NC 4.0](./LICENSE) © BlockShip — 允许分享与改编，必须署名，不得用于商业目的。
