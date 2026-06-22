@@ -401,9 +401,9 @@ Phase 6（多机部署）→ Redis cluster + 持久化策略
 - ✅ MemoryService 端口
 - ✅ short_term/ 短时记忆骨架（in-memory deque，`recent_message_limit=12`）
 - ✅ ObservationEvent 提交（每次对话都记录）
-- ✅ Conversation 表 `summary` + `summary_updated_at` 字段（已就绪，零迁移）
+- ✅ Conversation 表 `summary` + `summary_updated_at` 字段已接通 running summary 自动生成与持久化（零迁移）
+- ✅ `set_session_summary()` 已由 MemoryService 同步更新，保持 in-memory cache 兼容
 - 🚧 long_term/ 当前是空实现（[memory/long_term/store.py](../../backend/app/memory/long_term/store.py) 返回空 LongTermMemoryContext）—— 落地实施详见 § 7.2
-- 🚧 `set_session_summary()` 死接口待接通（详见 § 12）
 - 🚧 consolidation/ 整合任务（骨架，待落地）
 - 🚧 retrieval/ RAG 接入（预留空实现，触发条件详见 § 8.2）
 - 🚧 extract.py LLM 自动提取（落地实施详见 § 7.2）

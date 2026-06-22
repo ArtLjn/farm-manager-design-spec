@@ -64,6 +64,7 @@
 - [08_业务模块化.md](./01_正式设计/08_业务模块化.md)
 - [09_前端与移动端契约.md](./01_正式设计/09_前端与移动端契约.md)
 - [10_数据库结构设计.md](./01_正式设计/10_数据库结构设计.md)
+- [11_Skill设计/天气Skill.md](./01_正式设计/11_Skill设计/天气Skill.md)
 
 #### 02_产品需求
 - [01_核心能力清单.md](./02_产品需求/01_核心能力清单.md)
@@ -154,6 +155,7 @@
 | v0.7 | 2026-06-19 | 深度脱敏补漏：[07_可观测与运维] § 5 删除"对齐智能家居 LOGBUS 风格"，§ 11 部署路径 / 服务名 / 运维脚本全部改为占位（`<repo_dir>` / `<service_name>`）；[03_技术选型与依赖] § 5 同步；[03_接口协议/03_外部服务接口] § 5/§ 6 日志路径 + systemd unit 中所有 `/root/workspace/...` 改占位、User 字段改 `<deploy_user>` | BlockShip |
 | v0.8 | 2026-06-19 | 作物地域化同步：新建 [openspec/changes/extend-crop-template-with-region-tag](../openspec/changes/extend-crop-template-with-region-tag/proposal.md) delta 提案（proposal/design/specs/tasks 完整）；同步 [04_相关规范/03_数据库与迁移规范] 表清单 `crops → crop_templates` + region_tag 说明；[01_正式设计/08_业务模块化] CropPort 签名加 region + 新增 list_system_templates / import_system_template；[02_产品需求/01_核心能力清单] 作物管理补地域化变体；[03_接口协议/01_HTTP_API协议] 补 `GET /crops/templates/system?region=` 与 `POST /import` 端点 | BlockShip |
 | v0.9 | 2026-06-20 | 新增 [01_正式设计/10_数据库结构设计]：以 `backend/sql/farm_manager.sql` 生产 dump 为基准，反推 33 张表（含 `alembic_version`）的字段、约束、索引、外键；附接口→表映射矩阵、生产 vs 代码层差异对账、预留待建表（`memory_records`/`audit_logs`/`evaluation_reports` 等） | BlockShip |
+| v1.0 | 2026-06-22 | Running summary Phase A 落地：`conversations.summary` 自动生成与持久化、`set_session_summary()` 同步缓存、ConversationSelector 注入 `conversation_summary` block；长期记忆提取仍保持拆分提案单独推进 | BlockShip |
 
 ## 协议
 

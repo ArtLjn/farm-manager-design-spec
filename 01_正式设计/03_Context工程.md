@@ -228,7 +228,7 @@ class ContextPolicy:
 - 🚧 compressors/ —— **当前仅 `text.py` 截断函数**，micro/auto/manual 三层尚未实现（详见 § 6.1）
 - 🚧 preload.py 物候期/分类表（部分落地）
 - 🚧 retrieval_selector（预留空实现，待外部 RAG 接入）
-- 🚧 `set_session_summary` 死接口待接通（详见 [04_Memory工程 § 12](./04_Memory工程.md#12-多轮失忆治理路线)）
+- ✅ conversation_summary 注入已接通：`conversations.summary` 非空时由 ConversationSelector 注入 working/session block
 
 ## 12. 相关文档
 
