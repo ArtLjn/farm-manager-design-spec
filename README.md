@@ -65,6 +65,7 @@
 - [09_前端与移动端契约.md](./01_正式设计/09_前端与移动端契约.md)
 - [10_数据库结构设计.md](./01_正式设计/10_数据库结构设计.md)
 - [11_Skill设计/天气Skill.md](./01_正式设计/11_Skill设计/天气Skill.md)
+- [12_Skill路由选择架构.md](./01_正式设计/12_Skill路由选择架构.md)
 
 #### 02_产品需求
 - [01_核心能力清单.md](./02_产品需求/01_核心能力清单.md)
@@ -101,7 +102,7 @@
 | --- | --- |
 | 新人 onboarding | 00 → 02 → 03 → 01 |
 | 后端工程师 | 01.01 → 01.02 → 01.03 → 03.02 → 04 |
-| Agent/Prompt 工程师 | 01.01 → 01.02 → 01.05 → 04.01 → 06 |
+| Agent/Prompt 工程师 | 01.01 → 01.02 → 01.12 → 01.05 → 04.01 → 06 |
 | 移动端工程师 | 02 → 03.01 → 01.09 → 04.04 |
 | Admin Web 工程师 | 02 → 03.01 → 01.09 → 04.04 |
 | 产品/PM | 02 → 00.01 → 06 |
@@ -156,6 +157,7 @@
 | v0.8 | 2026-06-19 | 作物地域化同步：新建 [openspec/changes/extend-crop-template-with-region-tag](../openspec/changes/extend-crop-template-with-region-tag/proposal.md) delta 提案（proposal/design/specs/tasks 完整）；同步 [04_相关规范/03_数据库与迁移规范] 表清单 `crops → crop_templates` + region_tag 说明；[01_正式设计/08_业务模块化] CropPort 签名加 region + 新增 list_system_templates / import_system_template；[02_产品需求/01_核心能力清单] 作物管理补地域化变体；[03_接口协议/01_HTTP_API协议] 补 `GET /crops/templates/system?region=` 与 `POST /import` 端点 | BlockShip |
 | v0.9 | 2026-06-20 | 新增 [01_正式设计/10_数据库结构设计]：以 `backend/sql/farm_manager.sql` 生产 dump 为基准，反推 33 张表（含 `alembic_version`）的字段、约束、索引、外键；附接口→表映射矩阵、生产 vs 代码层差异对账、预留待建表（`memory_records`/`audit_logs`/`evaluation_reports` 等） | BlockShip |
 | v1.0 | 2026-06-22 | Running summary Phase A 落地：`conversations.summary` 自动生成与持久化、`set_session_summary()` 同步缓存、ConversationSelector 注入 `conversation_summary` block；长期记忆提取仍保持拆分提案单独推进 | BlockShip |
+| v1.1 | 2026-06-22 | 新增 [01_正式设计/12_Skill路由选择架构]：定义 Skill Catalog、Rule Classifier、Router Policy、Direct Routing、Tool Chain、Trace 与批量回归门禁；明确 `get_farm_status` 只用于泛化农场状态，禁止所有读 Skill 隐式扩展到农场状态 | BlockShip |
 
 ## 协议
 
