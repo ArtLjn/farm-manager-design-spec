@@ -8,7 +8,7 @@
 
 # Farm Manager 设计规范（Design Spec）
 
-> 版本：v0.9（草稿，全部 33 篇骨架已成 + Context/Memory 压缩机制修订 + Discovery Layer 设计补充 + 知识与记忆架构梳理 + 完整脱敏 + 作物地域化 delta 提案同步 + 数据库结构设计补全）  
+> 版本：v1.2（草稿，全部 34 篇骨架已成 + Context/Memory 压缩机制修订 + Discovery Layer 设计补充 + 知识与记忆架构梳理 + 完整脱敏 + 作物地域化 delta 提案同步 + 数据库结构设计补全 + Agent 范式规范化设计）  
 > 编写日期：2026-06-20  
 > 维护人：BlockShip  
 > 文档状态：草稿，持续对齐 `docs/architecture/` 与代码现状
@@ -66,6 +66,7 @@
 - [10_数据库结构设计.md](./01_正式设计/10_数据库结构设计.md)
 - [11_Skill设计/天气Skill.md](./01_正式设计/11_Skill设计/天气Skill.md)
 - [12_Skill路由选择架构.md](./01_正式设计/12_Skill路由选择架构.md)
+- [13_Agent范式规范化设计.md](./01_正式设计/13_Agent范式规范化设计.md)
 
 #### 02_产品需求
 - [01_核心能力清单.md](./02_产品需求/01_核心能力清单.md)
@@ -102,7 +103,7 @@
 | --- | --- |
 | 新人 onboarding | 00 → 02 → 03 → 01 |
 | 后端工程师 | 01.01 → 01.02 → 01.03 → 03.02 → 04 |
-| Agent/Prompt 工程师 | 01.01 → 01.02 → 01.12 → 01.05 → 04.01 → 06 |
+| Agent/Prompt 工程师 | 01.01 → 01.02 → 01.12 → 01.13 → 01.05 → 04.01 → 06 |
 | 移动端工程师 | 02 → 03.01 → 01.09 → 04.04 |
 | Admin Web 工程师 | 02 → 03.01 → 01.09 → 04.04 |
 | 产品/PM | 02 → 00.01 → 06 |
@@ -158,6 +159,7 @@
 | v0.9 | 2026-06-20 | 新增 [01_正式设计/10_数据库结构设计]：以 `backend/sql/farm_manager.sql` 生产 dump 为基准，反推 33 张表（含 `alembic_version`）的字段、约束、索引、外键；附接口→表映射矩阵、生产 vs 代码层差异对账、预留待建表（`memory_records`/`audit_logs`/`evaluation_reports` 等） | BlockShip |
 | v1.0 | 2026-06-22 | Running summary Phase A 落地：`conversations.summary` 自动生成与持久化、`set_session_summary()` 同步缓存、ConversationSelector 注入 `conversation_summary` block；长期记忆提取仍保持拆分提案单独推进 | BlockShip |
 | v1.1 | 2026-06-22 | 新增 [01_正式设计/12_Skill路由选择架构]：定义 Skill Catalog、Rule Classifier、Router Policy、Direct Routing、Tool Chain、Trace 与批量回归门禁；明确 `get_farm_status` 只用于泛化农场状态，禁止所有读 Skill 隐式扩展到农场状态 | BlockShip |
+| v1.2 | 2026-06-23 | 新增 [01_正式设计/13_Agent范式规范化设计]：定性当前单主 Agent + Skill + 触发式反思范式，补当前/目标架构图、Reflection 触发规范、Skill 触发树、农事用工子树、不过度设计的三阶段落地与回归种子 | BlockShip |
 
 ## 协议
 
