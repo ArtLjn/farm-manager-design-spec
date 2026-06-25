@@ -487,6 +487,163 @@ flowchart LR
 | execution | Skill 执行失败、DB 错误 | Skill/service |
 | response_quality | 无工具却说已记录 | Reflection/prompt |
 
+### 5.9 ContextBundle 与工具调用边界
+
+> 状态：草稿 | 关联：[5.1 总体生命周期](#51-总体生命周期)、[8.3 读操作树](#83-读操作树)、[12 成功标准](#12-成功标准)
+
+#### 5.9.1 问题与原则
+
+ContextBundle 当前承担两个相互冲突的角色：
+
+1. 给 Router/Validator 提供**路由决策证据**（合理）。
+2. 给 LLM 提供**回答素材**（不合理）。
+
+第二个角色导致 LLM 看到注入的天气、农场状态等数据后，**不再调用对应 read Skill**，直接用陈旧的注入数据回答。业界生产级 agent 普遍放弃"预注入可被询问的查询答案"模式，转向 lazy / progressive disclosure。
+
+核心原则：
+
+- ContextBundle 只承载**身份、指针、状态**，不承载**答案**。
+- 任何可能成为用户查询目标的数据，必须通过 Skill 在调用时获取。
+- 查询型意图在 Rule Gate 阶段强制绑定对应 read Skill，LLM 没得选。
+
+#### 5.9.2 ContextBundle 契约白名单
+
+| 允许注入（身份/指针/状态/偏好） | 禁止注入（可被询问的查询答案） |
+| --- | --- |
+| `farm_id` / `user_id` / `session_id` | 天气数据、天气摘要 |
+| `current_crop_cycle_id`（指针，非详情） | 农场状态快照 |
+| `current_pending_action_id` / `current_pending_plan_id` | 茬口详情、作物状态 |
+| `last_confirmed_at` | 近期日志摘要 |
+| `user_preferences`（语言、单位） | 工人列表快照 |
+| | 成本汇总、欠款汇总 |
+
+实现位置：`backend/app/agent/runtime/context_bundle.py` 维护白名单常量集合，构造 ContextBundle 时按白名单过滤。
+
+#### 5.9.3 Rule Gate 意图-工具强制绑定
+
+Rule Gate 识别查询型意图时，强制把对应 read Skill 写入 `selected_tools`，并设 `tool_choice=required`。绑定项不被 `max_tools` 裁剪。
+
+| 意图模式 | 强制绑定 Skill | `tool_choice` |
+| --- | --- | --- |
+| 天气 / 下雨 / 气温 / 预报 | `get_weather_forecast` | `required` |
+| 我的茬口 / 当前种什么 / 几号棚 | `get_crop_cycles` 或 `get_farm_status` | `required` |
+| 工人列表 / 有哪些工人 | `get_workers` | `required` |
+| 欠款 / 应付 / 未付人工 | `get_labor_payables` | `required` |
+| 政策 / 新闻 / 价格 / 上市 | `web_search` | `required` |
+
+实现位置：`backend/app/agent/router/classifier.py` 新增 `QUERY_INTENT_TOOL_BINDING` 映射；`policy.py` 裁剪候选工具时优先保留强制绑定项。
+
+#### 5.9.4 开场白独立通道（可选）
+
+仅当业务确认开场需要展示天气/农场状态时启用。由 session 创建事件触发一次显式 Skill 编排，结果只渲染到开场回复，不写入 ContextBundle。
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant S as Session Start
+    participant O as Session Intro Orchestrator
+    participant T as Tool Executor
+    participant R as Reply Builder
+
+    U->>S: 新会话
+    S->>O: 触发开场
+    O->>T: get_weather_forecast
+    O->>T: get_farm_status
+    T-->>O: 结果
+    O->>R: 渲染开场回复（仅本轮）
+    R-->>U: 开场白
+    Note over O,R: 结果不写入 ContextBundle<br/>下一轮问"天气"仍需重新调用
+```
+
+约束：
+
+- 开场 Skill 调用仍进 trace、进 data flywheel。
+- 后续轮次不依赖开场缓存，必须重新调用 Skill。
+- 当前若业务无此需求，**不做本节**（YAGNI）。
+
+#### 5.9.5 验证策略
+
+三层验证，缺一不可：
+
+| 层 | 验证内容 | 工具 |
+| --- | --- | --- |
+| 代码层 | 白名单生效 | 单测断言注入字段集合 ⊆ 白名单 |
+| 行为层 | Skill 真被调用 | trace + 集成测 |
+| 业务层 | 回复数据来自 Skill 而非 ContextBundle | 端到端 eval（污染对照） |
+
+Eval 集设计（~48 条，覆盖 B + D + E2 三类）：
+
+| 类别 | 数量 | 覆盖目标 | 示例 |
+| --- | --- | --- | --- |
+| B-查询型正例 | 20 | 5 个意图 × 4 种表达（D 类：同意图不同说法） | "天气如何" / "今天下雨吗" / "明天带伞吗" / "天气预报" |
+| B-写操作正例 | 10 | 单写入 + 多步骤 pending | 第 11 节种子 5 条 + 扩充 5 条 |
+| B-多意图正例 | 5 | 一句话多写入拆解 | "新工人李丽工资100，今天去6号棚收水稻" |
+| B-闲聊负例 | 8 | 误触发率 ≤ 0.02 | "你好" / "今天真热" / "谢谢" |
+| E2-多轮污染 | 5 | 开场注入后第 N 轮询问仍强制调 Skill | 开场注入天气 → 第 3 轮问"天气" → 必须调用 `get_weather_forecast` |
+
+污染对照（业务层验证核心）：
+
+- 每条查询型正例跑两次：(a) ContextBundle 无污染、(b) ContextBundle 塞入与 Skill mock 返回值不同的假数据。
+- 断言：(a)(b) 两次最终回复一致，且都使用 Skill 返回值，不使用注入值。
+- 这直接验证根因消除——不依赖 LLM "自律"，靠断言保证。
+
+Trace 事件（行为层验证核心）：
+
+- `context_bundle_built`：记录注入字段集合，单测断言 ⊆ 白名单。
+- `tool_call_forced`：记录强制绑定的 Skill 名，断言出现在 tool_calls 中。
+- `final_reply_data_source`：必须为 `tool:<skill_name>`，不能为 `context_bundle`。
+
+#### 5.9.6 量化指标
+
+| 指标 | 目标 |
+| --- | --- |
+| ContextBundle 违禁字段注入率 | 0 |
+| 查询型意图触发对应 Skill 率 | ≥ 0.98 |
+| Skill 调用与回复数据一致性 | 100% |
+| 闲聊误触发 Skill 率 | ≤ 0.02 |
+
+**Baseline 采样**：改动前先用现有代码跑一遍 Eval 集，记录当前指标。无 baseline 数字不进入实施。
+
+##### 5.9.6.1 Baseline 与改造后实测数据（2026-06-25）
+
+| 指标 | 目标 | Baseline | 改造后实测 | 状态 |
+| --- | --- | --- | --- | --- |
+| ContextBundle 违禁字段注入率 | 0 | 100%（无白名单） | 0%（`tests/context/test_builder_allowlist.py::test_all_forbidden_keys_covered` 全过） | ✅ 达标 |
+| 查询型意图触发对应 Skill 率 | ≥ 0.98 | 0%（无机制） | 60%（12/20，字典覆盖不足） | ⚠️ 待 Task 11 扩字典 |
+| Skill 调用与回复数据一致性 | 100% | N/A | Layer 2 trace payload 概念验证通过（`_build_data_source_payload` 区分 `tool:xxx` vs `context_bundle`），Layer 3 留 Task 11 | ⚠️ 部分 |
+| 闲聊误触发 Skill 率 | ≤ 0.02 | N/A | 0%（8/8，`TestBaselineChitchatNoFalsePositive` 全过） | ✅ 达标 |
+
+**说明**：
+
+- "查询型意图触发 Skill 率 60%"源于 `QUERY_INTENT_FORCE_BINDING` 字典的 16 个关键词未覆盖所有同义表达。失败用例 ID：`q-weather-3`、`q-cycle-2`、`q-cycle-4`、`q-workers-4`、`q-payables-4`、`q-debt-2`、`q-debt-3`、`q-debt-4`。Task 11（Data Flywheel 失败样本接入）会把这 8 条作为输入扩展字典。
+- "Skill 调用与回复数据一致性"目前通过 Layer 2 trace payload 概念验证（`_build_data_source_payload` 区分 `tool:xxx` vs `context_bundle`）；Layer 3 完整 pipeline 验证留到 Task 11。
+- 所有 trace 事件（`context_bundle_built` / `tool_call_forced` / `final_reply_data_source`）已埋点，可在生产环境观测。
+- 改造后 eval 全量结果：86 passed / 16 failed（8 用例 × 2 个测试文件 = `test_baseline.py` + `test_pollution_differential.py`），失败全部归因于字典覆盖不足。
+
+#### 5.9.7 实施顺序
+
+```mermaid
+flowchart TD
+    E["Step 0<br/>搭 Eval 集跑 baseline"] --> C1["第 1 条<br/>ContextBundle 白名单"]
+    C1 --> C2["第 2 条<br/>Rule Gate 强制绑定"]
+    C2 --> V["Step 3<br/>跑 Eval 对比 baseline"]
+    V --> O{"达标?"}
+    O -->|是| C3["第 3 条（可选）<br/>开场白独立通道"]
+    O -->|否| F["进 Data Flywheel<br/>补回归用例后再改"]
+    C3 --> D["Data Flywheel 闭环启用"]
+    F --> C1
+```
+
+#### 5.9.8 失败类型补充
+
+在 5.8 节失败阶段表中新增：
+
+| 阶段 | 典型问题 | 修复方向 |
+| --- | --- | --- |
+| `context_injection` | 违禁字段注入 ContextBundle | 白名单常量、单测 |
+| `tool_binding` | 查询型意图未强制绑定 Skill | Rule Gate 映射、eval |
+| `data_source_mismatch` | 回复数据来自 ContextBundle 而非 Skill | trace 比对、eval 污染对照 |
+
 ## 6. 计划触发规则
 
 ### 6.1 单写入
